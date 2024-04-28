@@ -4,20 +4,21 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"math/rand"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/URL-Shortener/errors"
-	"github.com/URL-Shortener/store"
+	"github.com/URL-Shortener/store/inmemory"
 )
 
 type UrlShortner struct {
-	storage *store.Shortner
+	storage *inmemory.Shortner
 }
 
 func NewUrlShortner() *UrlShortner {
 	return &UrlShortner{
-		storage: store.NewShortner(),
+		storage: inmemory.NewShortner(),
 	}
 }
 
@@ -67,4 +68,17 @@ func (s *UrlShortner) generateIcrementalSuffix() string {
 		builder.WriteByte(characters[r.Intn(len(characters))])
 	}
 	return builder.String()
+}
+
+func (s *UrlShortner) getDomain(originalUrl string) (string, error) {
+	parsedUrl, err := url.Parse(originalUrl)
+	if err != nil {
+		return "", errors.ErrInvalidLongUrl
+	}
+
+	if parsedUrl.Host == "" || parsedUrl.Scheme == "" {
+		return "", errors.ErrInvalidLongUrl
+	}
+
+	return parsedUrl.Path, nil
 }
