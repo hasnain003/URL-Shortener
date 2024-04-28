@@ -1,6 +1,7 @@
 package shortner
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -26,10 +27,10 @@ func NewUrlShortnerHandler(service *service.UrlShortner, domain string) *UrlShor
 
 func (s *UrlShortnerHandler) Redirect(ctx *gin.Context) {
 	shortUrl := ctx.Param("short")
-	originalURL, err := s.urlShortenerService.FetchOriginalUrl(shortUrl)
+	originalURL, err := s.urlShortenerService.FetchOriginalUrl(context.TODO(), shortUrl)
 	if err != nil {
 		log.Error("ShortnerHandler.Redirect Error fetchong original url", err)
-		ctx.JSON(http.StatusNotFound, errors.ErrInvalidShortUrl)
+		ctx.JSON(http.StatusNotFound, errors.ErrInvalidShortUrl.Error())
 		return
 	}
 	ctx.JSON(http.StatusMovedPermanently, originalURL)
@@ -40,7 +41,7 @@ func (s *UrlShortnerHandler) POST(ctx *gin.Context) {
 	body, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		log.Error("ShortnerHandler.Post error while reading request body", err)
-		ctx.JSON(http.StatusBadRequest, errors.ErrInvalidRequestBody)
+		ctx.JSON(http.StatusBadRequest, errors.ErrInvalidRequestBody.Error())
 		return
 	}
 
@@ -48,20 +49,20 @@ func (s *UrlShortnerHandler) POST(ctx *gin.Context) {
 	err = json.Unmarshal(body, &req)
 	if err != nil {
 		log.Error("ShortnerHandler.Post error while unmarshalling request body", err)
-		ctx.JSON(http.StatusBadRequest, errors.ErrInvalidRequestBody)
+		ctx.JSON(http.StatusBadRequest, errors.ErrInvalidRequestBody.Error())
 		return
 	}
 
 	if len(req.LongUrl) == 0 {
 		log.Error("ShortnerHandler.Post empty long url", err)
-		ctx.JSON(http.StatusBadRequest, errors.ErrInvalidRequestBody)
+		ctx.JSON(http.StatusBadRequest, errors.ErrInvalidRequestBody.Error())
 		return
 	}
 
-	shortUrl, err := s.urlShortenerService.CreateShortUrl(req.LongUrl)
+	shortUrl, err := s.urlShortenerService.CreateShortUrl(context.TODO(), req.LongUrl)
 	if err != nil {
 		log.Error("ShortHandler.Post Error creating short url", err)
-		ctx.JSON(http.StatusInternalServerError, "")
+		ctx.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
