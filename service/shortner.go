@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"math/rand"
@@ -9,40 +10,47 @@ import (
 	"time"
 
 	"github.com/URL-Shortener/errors"
-	"github.com/URL-Shortener/store/inmemory"
+	"github.com/URL-Shortener/store"
+	"github.com/go-kratos/kratos/v2/log"
 )
 
 type UrlShortner struct {
-	storage *inmemory.Shortner
+	storage store.Store
 }
 
-func NewUrlShortner() *UrlShortner {
+func NewUrlShortner(storage store.Store) *UrlShortner {
 	return &UrlShortner{
-		storage: inmemory.NewShortner(),
+		storage: storage,
 	}
 }
 
-func (s *UrlShortner) FetchOriginalUrl(shortUrl string) (string, error) {
-	originalUrl, err := s.storage.FetchShortUrl(shortUrl)
+func (s *UrlShortner) FetchOriginalUrl(ctx context.Context, shortUrl string) (string, error) {
+	originalUrl, err := s.storage.FetchShortUrl(ctx, shortUrl)
 	if err != nil {
 		return "", err
 	}
 	return originalUrl, nil
 }
 
-func (s *UrlShortner) CreateShortUrl(originalUrl string) (string, error) {
+func (s *UrlShortner) CreateShortUrl(ctx context.Context, originalUrl string) (string, error) {
 	// checks if the original url is already there in db
-	if _, err := s.storage.FetchOriginalUrl(originalUrl); err == nil {
+	_, err := s.storage.FetchOriginalUrl(ctx, originalUrl)
+	if err == nil {
 		return "", errors.ErrorUrlAlreadyExist
+	} else if err != errors.ErrInvalidShortUrl {
+		return "", err
 	}
-	shortUrl := s.generateUniqueAlias(originalUrl)
-	s.storage.InsertShortUrl(shortUrl, originalUrl)
-
+	shortUrl := s.generateUniqueAlias(ctx, originalUrl)
+	err = s.storage.InsertShortUrl(ctx, shortUrl, originalUrl)
+	if err != nil {
+		log.Error("UrlShortner.CreateShortUrl error inserting shortUrl", err)
+		return "", err
+	}
 	return shortUrl, nil
 }
 
 // generateUniqueAlias generates a random string of characters for the short URL
-func (s *UrlShortner) generateUniqueAlias(originalURL string) string {
+func (s *UrlShortner) generateUniqueAlias(ctx context.Context, originalURL string) string {
 	var shortURL string
 	// Hash the original URL using SHA-256
 	hash := sha256.New()
@@ -52,7 +60,7 @@ func (s *UrlShortner) generateUniqueAlias(originalURL string) string {
 	for {
 		shortURL += s.generateIcrementalSuffix()
 		// if short url already exist then again find the next unique short url
-		if _, err := s.storage.FetchShortUrl(shortURL); err != nil {
+		if _, err := s.storage.FetchShortUrl(ctx, shortURL); err != nil {
 			break
 		}
 	}

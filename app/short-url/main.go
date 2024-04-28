@@ -6,13 +6,16 @@ import (
 	"github.com/URL-Shortener/handlers"
 	"github.com/URL-Shortener/handlers/shortner"
 	"github.com/URL-Shortener/service"
+	"github.com/URL-Shortener/store/redisstore"
 	"github.com/gin-gonic/gin"
 	_ "github.com/gin-gonic/gin"
 )
 
 var (
-	port   = flag.String("restPort", ":8080", "Port for shortener service")
-	domain = flag.String("domain", "localhost:8080/", "our application domain name")
+	port          = flag.String("restPort", ":8080", "Port for shortener service")
+	domain        = flag.String("domain", "localhost:8080/", "Our application domain name")
+	redisAddr     = flag.String("redisAddr", "redis:6379", "Redis node address")
+	redisPassword = flag.String("redisPassword", "", "Password for redis node")
 )
 
 func main() {
@@ -21,7 +24,10 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
-	urlService := service.NewUrlShortner()
+	//inmemory := inmemory.NewShortner()
+	//urlService := service.NewUrlShortner(inmemory)
+	store := redisstore.NewRedisStore(*redisAddr, *redisPassword)
+	urlService := service.NewUrlShortner(store)
 	urlHandler := shortner.NewUrlShortnerHandler(urlService, *domain)
 	router.GET("/health", handlers.Health)
 	router.GET("/:short", urlHandler.Redirect)
