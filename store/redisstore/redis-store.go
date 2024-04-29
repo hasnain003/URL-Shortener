@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/URL-Shortener/errors"
+	"github.com/URL-Shortener/models"
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/gommon/log"
 )
@@ -59,4 +60,24 @@ func (r *RedisStore) InsertShortUrl(ctx context.Context, shortURL, longURL strin
 		}
 	}
 	return nil
+}
+
+func (r *RedisStore) IncrementHitCount(ctx context.Context, value string) {
+	err := r.client.ZIncrBy(ctx, "hit_counts", 1.0, value).Err()
+	if err != nil {
+		log.Error("Error incrementing hit count:", err)
+	}
+}
+
+func (r *RedisStore) GetTopK(ctx context.Context, top int) []models.MetricsResponse {
+	topValues, err := r.client.ZRevRangeWithScores(ctx, "hit_counts", 0, int64(top-1)).Result()
+	if err != nil {
+		log.Error("Error retrieving top values:", err)
+	}
+	resp := make([]models.MetricsResponse, 0)
+	for _, value := range topValues {
+		m := models.NewMetricResponse(int(value.Score), value.Member.(string))
+		resp = append(resp, m)
+	}
+	return resp
 }

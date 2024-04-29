@@ -28,5 +28,8 @@ COPY --from=builder /app/short-url .
 # Expose port 8080
 EXPOSE 8080
 
+# Expose port 8080
+EXPOSE 8080
+
 # Command to run the executable
 CMD ["./short-url"]
