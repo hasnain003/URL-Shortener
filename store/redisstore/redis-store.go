@@ -19,19 +19,8 @@ func NewRedisStore(address, password string) *RedisStore {
 	}
 }
 
-func (r *RedisStore) FetchOriginalUrl(ctx context.Context, shortUrl string) (string, error) {
-	resp, err := r.client.Get(ctx, shortUrl).Result()
-	if err != nil && err != redis.Nil {
-		log.Error("RedisStore.fetchoriginalUrl error in Get call", err)
-		return resp, err
-	} else if err == redis.Nil {
-		return "", errors.ErrInvalidShortUrl
-	}
-	return resp, err
-}
-
-func (r *RedisStore) FetchShortUrl(ctx context.Context, longUrl string) (string, error) {
-	resp, err := r.client.Get(ctx, longUrl).Result()
+func (r *RedisStore) FetchUrl(ctx context.Context, url string) (string, error) {
+	resp, err := r.client.Get(ctx, url).Result()
 	if err != nil && err != redis.Nil {
 		log.Error("RedisStore.fetchoriginalUrl error in Get call", err)
 		return resp, err
@@ -45,7 +34,7 @@ func (r *RedisStore) InsertShortUrl(ctx context.Context, shortURL, longURL strin
 	if shortURL == "" || longURL == "" {
 		return errors.ErrInvalidUrl
 	}
-	if _, err := r.FetchShortUrl(ctx, shortURL); err == nil {
+	if _, err := r.FetchUrl(ctx, shortURL); err == nil {
 		return errors.ErrShortUrlExist
 	} else {
 		err := r.client.Set(ctx, shortURL, longURL, 0).Err()

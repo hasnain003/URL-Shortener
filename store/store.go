@@ -7,8 +7,7 @@ import (
 )
 
 type Store interface {
-	FetchOriginalUrl(ctx context.Context, shortUrl string) (string, error)
-	FetchShortUrl(ctx context.Context, longUrl string) (string, error)
+	FetchUrl(ctx context.Context, url string) (string, error)
 	InsertShortUrl(ctx context.Context, shortURL, longURL string) error
 	IncrementHitCount(ctx context.Context, value string)
 	GetTopK(ctx context.Context, top int) []models.MetricsResponse

@@ -20,18 +20,11 @@ func NewShortner() *Shortner {
 	}
 }
 
-func (s *Shortner) FetchOriginalUrl(ctx context.Context, shortUrl string) (string, error) {
-	if _, ok := s.storage[shortUrl]; ok {
-		return s.storage[shortUrl], nil
+func (s *Shortner) FetchUrl(ctx context.Context, url string) (string, error) {
+	if _, ok := s.storage[url]; ok {
+		return s.storage[url], nil
 	}
 	return "", errors.ErrInvalidShortUrl
-}
-
-func (s *Shortner) FetchShortUrl(ctx context.Context, longUrl string) (string, error) {
-	if _, ok := s.storage[longUrl]; ok {
-		return s.storage[longUrl], nil
-	}
-	return "", errors.ErrInvalidLongUrl
 }
 
 func (s *Shortner) InsertShortUrl(ctx context.Context, shortURL, longURL string) error {
