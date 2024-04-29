@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/URL-Shortener/errors"
+	"github.com/URL-Shortener/models"
 	"github.com/URL-Shortener/store"
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -25,7 +26,7 @@ func NewUrlShortner(storage store.Store) *UrlShortner {
 }
 
 func (s *UrlShortner) FetchOriginalUrl(ctx context.Context, shortUrl string) (string, error) {
-	originalUrl, err := s.storage.FetchShortUrl(ctx, shortUrl)
+	originalUrl, err := s.storage.FetchUrl(ctx, shortUrl)
 	if err != nil {
 		return "", err
 	}
@@ -34,7 +35,7 @@ func (s *UrlShortner) FetchOriginalUrl(ctx context.Context, shortUrl string) (st
 
 func (s *UrlShortner) CreateShortUrl(ctx context.Context, originalUrl string) (string, error) {
 	// checks if the original url is already there in db
-	_, err := s.storage.FetchOriginalUrl(ctx, originalUrl)
+	_, err := s.storage.FetchUrl(ctx, originalUrl)
 	if err == nil {
 		return "", errors.ErrorUrlAlreadyExist
 	} else if err != errors.ErrInvalidShortUrl {
@@ -46,7 +47,20 @@ func (s *UrlShortner) CreateShortUrl(ctx context.Context, originalUrl string) (s
 		log.Error("UrlShortner.CreateShortUrl error inserting shortUrl", err)
 		return "", err
 	}
+
+	domainName, err := s.getDomain(originalUrl)
+	if err != nil {
+		log.Error("UrlShortner.CreateShortUrl error inavlid long url", err)
+		return "", err
+	}
+	s.storage.IncrementHitCount(ctx, domainName)
+
 	return shortUrl, nil
+}
+
+func (s *UrlShortner) GetTopK(ctx context.Context, top int) []models.MetricsResponse {
+	resp := s.storage.GetTopK(ctx, top)
+	return resp
 }
 
 // generateUniqueAlias generates a random string of characters for the short URL
@@ -60,7 +74,7 @@ func (s *UrlShortner) generateUniqueAlias(ctx context.Context, originalURL strin
 	for {
 		shortURL += s.generateIcrementalSuffix()
 		// if short url already exist then again find the next unique short url
-		if _, err := s.storage.FetchShortUrl(ctx, shortURL); err != nil {
+		if _, err := s.storage.FetchUrl(ctx, shortURL); err != nil {
 			break
 		}
 	}
@@ -79,14 +93,15 @@ func (s *UrlShortner) generateIcrementalSuffix() string {
 }
 
 func (s *UrlShortner) getDomain(originalUrl string) (string, error) {
-	parsedUrl, err := url.Parse(originalUrl)
+	u, err := url.Parse(originalUrl)
 	if err != nil {
 		return "", errors.ErrInvalidLongUrl
 	}
 
-	if parsedUrl.Host == "" || parsedUrl.Scheme == "" {
-		return "", errors.ErrInvalidLongUrl
+	domainParts := strings.Split(u.Hostname(), ".")
+	if len(domainParts) < 2 {
+		return "", nil
 	}
-
-	return parsedUrl.Path, nil
+	// Extract the second-level domain (e.g., "youtube.com")
+	return strings.Join(domainParts[len(domainParts)-2:], "."), nil
 }
