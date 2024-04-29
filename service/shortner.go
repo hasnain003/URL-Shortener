@@ -26,7 +26,7 @@ func NewUrlShortner(storage store.Store) *UrlShortner {
 }
 
 func (s *UrlShortner) FetchOriginalUrl(ctx context.Context, shortUrl string) (string, error) {
-	originalUrl, err := s.storage.FetchShortUrl(ctx, shortUrl)
+	originalUrl, err := s.storage.FetchUrl(ctx, shortUrl)
 	if err != nil {
 		return "", err
 	}
@@ -35,7 +35,7 @@ func (s *UrlShortner) FetchOriginalUrl(ctx context.Context, shortUrl string) (st
 
 func (s *UrlShortner) CreateShortUrl(ctx context.Context, originalUrl string) (string, error) {
 	// checks if the original url is already there in db
-	_, err := s.storage.FetchOriginalUrl(ctx, originalUrl)
+	_, err := s.storage.FetchUrl(ctx, originalUrl)
 	if err == nil {
 		return "", errors.ErrorUrlAlreadyExist
 	} else if err != errors.ErrInvalidShortUrl {
@@ -74,7 +74,7 @@ func (s *UrlShortner) generateUniqueAlias(ctx context.Context, originalURL strin
 	for {
 		shortURL += s.generateIcrementalSuffix()
 		// if short url already exist then again find the next unique short url
-		if _, err := s.storage.FetchShortUrl(ctx, shortURL); err != nil {
+		if _, err := s.storage.FetchUrl(ctx, shortURL); err != nil {
 			break
 		}
 	}
