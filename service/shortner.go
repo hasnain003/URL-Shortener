@@ -58,8 +58,8 @@ func (s *UrlShortner) CreateShortUrl(ctx context.Context, originalUrl string) (s
 	return shortUrl, nil
 }
 
-func (s *UrlShortner) GetTop3(ctx context.Context) []models.MetricsResponse {
-	resp := s.storage.GetTop3(ctx)
+func (s *UrlShortner) GetTopK(ctx context.Context, top int) []models.MetricsResponse {
+	resp := s.storage.GetTopK(ctx, top)
 	return resp
 }
 

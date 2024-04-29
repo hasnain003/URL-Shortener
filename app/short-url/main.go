@@ -35,6 +35,6 @@ func main() {
 	router.POST("v1/create/short-url", urlHandler.POST)
 
 	metricsHandler := prommetrics.NewMetricsHandler(urlService)
-	router.GET("v1/metrics/top3", metricsHandler.GetTop3)
+	router.GET("v1/metrics/top", metricsHandler.GetTopK) // This api can be make flexible to support multiple top values
 	router.Run(*port)
 }

@@ -51,7 +51,7 @@ func (s *Shortner) IncrementHitCount(ctx context.Context, value string) {
 	s.counts[value]++
 }
 
-func (s *Shortner) GetTop3(ctx context.Context) []models.MetricsResponse {
+func (s *Shortner) GetTopK(ctx context.Context, top int) []models.MetricsResponse {
 	type kv struct {
 		Key   string
 		Value int
@@ -64,9 +64,9 @@ func (s *Shortner) GetTop3(ctx context.Context) []models.MetricsResponse {
 		return sortedValues[i].Value > sortedValues[j].Value
 	})
 
-	top := make([]models.MetricsResponse, 0)
-	for i := 0; i < len(sortedValues) && i < 3; i++ {
-		top = append(top, models.NewMetricResponse(sortedValues[i].Value, sortedValues[i].Key))
+	resp := make([]models.MetricsResponse, 0)
+	for i := 0; i < len(sortedValues) && i < top; i++ {
+		resp = append(resp, models.NewMetricResponse(sortedValues[i].Value, sortedValues[i].Key))
 	}
-	return top
+	return resp
 }

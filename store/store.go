@@ -11,5 +11,5 @@ type Store interface {
 	FetchShortUrl(ctx context.Context, longUrl string) (string, error)
 	InsertShortUrl(ctx context.Context, shortURL, longURL string) error
 	IncrementHitCount(ctx context.Context, value string)
-	GetTop3(ctx context.Context) []models.MetricsResponse
+	GetTopK(ctx context.Context, top int) []models.MetricsResponse
 }

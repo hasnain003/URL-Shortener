@@ -69,8 +69,8 @@ func (r *RedisStore) IncrementHitCount(ctx context.Context, value string) {
 	}
 }
 
-func (r *RedisStore) GetTop3(ctx context.Context) []models.MetricsResponse {
-	topValues, err := r.client.ZRevRangeWithScores(ctx, "hit_counts", 0, 2).Result()
+func (r *RedisStore) GetTopK(ctx context.Context, top int) []models.MetricsResponse {
+	topValues, err := r.client.ZRevRangeWithScores(ctx, "hit_counts", 0, int64(top-1)).Result()
 	if err != nil {
 		log.Error("Error retrieving top values:", err)
 	}
