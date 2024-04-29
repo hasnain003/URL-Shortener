@@ -4,6 +4,7 @@ import (
 	"flag"
 
 	"github.com/URL-Shortener/handlers"
+	"github.com/URL-Shortener/handlers/prommetrics"
 	"github.com/URL-Shortener/handlers/shortner"
 	"github.com/URL-Shortener/service"
 	"github.com/URL-Shortener/store/redisstore"
@@ -32,5 +33,8 @@ func main() {
 	router.GET("/health", handlers.Health)
 	router.GET("/:short", urlHandler.Redirect)
 	router.POST("v1/create/short-url", urlHandler.POST)
+
+	metricsHandler := prommetrics.NewMetricsHandler(urlService)
+	router.GET("v1/metrics/top3", metricsHandler.GetTop3)
 	router.Run(*port)
 }

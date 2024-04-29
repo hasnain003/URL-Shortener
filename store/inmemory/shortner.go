@@ -2,17 +2,21 @@ package inmemory
 
 import (
 	"context"
+	"sort"
 
 	errors "github.com/URL-Shortener/errors"
+	"github.com/URL-Shortener/models"
 )
 
 type Shortner struct {
 	storage map[string]string
+	counts  map[string]int
 }
 
 func NewShortner() *Shortner {
 	return &Shortner{
 		storage: make(map[string]string),
+		counts:  make(map[string]int),
 	}
 }
 
@@ -41,4 +45,28 @@ func (s *Shortner) InsertShortUrl(ctx context.Context, shortURL, longURL string)
 		s.storage[longURL] = shortURL
 	}
 	return nil
+}
+
+func (s *Shortner) IncrementHitCount(ctx context.Context, value string) {
+	s.counts[value]++
+}
+
+func (s *Shortner) GetTop3(ctx context.Context) []models.MetricsResponse {
+	type kv struct {
+		Key   string
+		Value int
+	}
+	var sortedValues []kv
+	for key, value := range s.counts {
+		sortedValues = append(sortedValues, kv{key, value})
+	}
+	sort.Slice(sortedValues, func(i, j int) bool {
+		return sortedValues[i].Value > sortedValues[j].Value
+	})
+
+	top := make([]models.MetricsResponse, 0)
+	for i := 0; i < len(sortedValues) && i < 3; i++ {
+		top = append(top, models.NewMetricResponse(sortedValues[i].Value, sortedValues[i].Key))
+	}
+	return top
 }

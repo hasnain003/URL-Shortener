@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/URL-Shortener/errors"
+	"github.com/URL-Shortener/models"
 	"github.com/URL-Shortener/store"
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -46,7 +47,20 @@ func (s *UrlShortner) CreateShortUrl(ctx context.Context, originalUrl string) (s
 		log.Error("UrlShortner.CreateShortUrl error inserting shortUrl", err)
 		return "", err
 	}
+
+	domainName, err := s.getDomain(originalUrl)
+	if err != nil {
+		log.Error("UrlShortner.CreateShortUrl error inavlid long url", err)
+		return "", err
+	}
+	s.storage.IncrementHitCount(ctx, domainName)
+
 	return shortUrl, nil
+}
+
+func (s *UrlShortner) GetTop3(ctx context.Context) []models.MetricsResponse {
+	resp := s.storage.GetTop3(ctx)
+	return resp
 }
 
 // generateUniqueAlias generates a random string of characters for the short URL
@@ -79,14 +93,15 @@ func (s *UrlShortner) generateIcrementalSuffix() string {
 }
 
 func (s *UrlShortner) getDomain(originalUrl string) (string, error) {
-	parsedUrl, err := url.Parse(originalUrl)
+	u, err := url.Parse(originalUrl)
 	if err != nil {
 		return "", errors.ErrInvalidLongUrl
 	}
 
-	if parsedUrl.Host == "" || parsedUrl.Scheme == "" {
-		return "", errors.ErrInvalidLongUrl
+	domainParts := strings.Split(u.Hostname(), ".")
+	if len(domainParts) < 2 {
+		return "", nil
 	}
-
-	return parsedUrl.Path, nil
+	// Extract the second-level domain (e.g., "youtube.com")
+	return strings.Join(domainParts[len(domainParts)-2:], "."), nil
 }
