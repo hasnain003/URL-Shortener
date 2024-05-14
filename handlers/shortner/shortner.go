@@ -33,7 +33,7 @@ func (s *UrlShortnerHandler) Redirect(ctx *gin.Context) {
 		ctx.JSON(http.StatusNotFound, errors.ErrInvalidShortUrl.Error())
 		return
 	}
-	ctx.JSON(http.StatusMovedPermanently, originalURL)
+	ctx.Redirect(301, originalURL)
 }
 
 func (s *UrlShortnerHandler) POST(ctx *gin.Context) {
