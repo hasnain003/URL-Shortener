@@ -34,13 +34,20 @@ func (s *UrlShortner) FetchOriginalUrl(ctx context.Context, shortUrl string) (st
 }
 
 func (s *UrlShortner) CreateShortUrl(ctx context.Context, originalUrl string) (string, error) {
+	// Validate long url and fetch domain name
+	domainName, err := s.getDomain(originalUrl)
+	if err != nil {
+		log.Error("UrlShortner.CreateShortUrl error inavlid long url", err)
+		return "", err
+	}
 	// checks if the original url is already there in db
-	_, err := s.storage.FetchUrl(ctx, originalUrl)
+	_, err = s.storage.FetchUrl(ctx, originalUrl)
 	if err == nil {
 		return "", errors.ErrorUrlAlreadyExist
 	} else if err != errors.ErrInvalidShortUrl {
 		return "", err
 	}
+
 	shortUrl := s.generateUniqueAlias(ctx, originalUrl)
 	err = s.storage.InsertShortUrl(ctx, shortUrl, originalUrl)
 	if err != nil {
@@ -48,11 +55,6 @@ func (s *UrlShortner) CreateShortUrl(ctx context.Context, originalUrl string) (s
 		return "", err
 	}
 
-	domainName, err := s.getDomain(originalUrl)
-	if err != nil {
-		log.Error("UrlShortner.CreateShortUrl error inavlid long url", err)
-		return "", err
-	}
 	s.storage.IncrementHitCount(ctx, domainName)
 
 	return shortUrl, nil
